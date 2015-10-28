@@ -4,7 +4,7 @@
 	Plugin URI: https://github.com/TheLazzziest/mgpln
     Description: Megaplan WP plugin
     Version: beta
-    Author: Max Yakovenko
+    Author: <a href="http://sadesign.pro">Sadesign Studio</a>
     License: GPL2
     License URI: https://www.gnu.org/licenses/gpl-2.0.html
     Text Domain: megaplan-wp-plugin
@@ -26,7 +26,8 @@ along with {Plugin Name}. If not, see {License URI}.
 
 define( 'WP_MGPLN_PLUGIN', __FILE__);
 define( 'WP_MGPLN_PATH', plugin_dir_path(WP_MGPLN_PLUGIN));
-define( 'WP_MGPLN_INCLUDES', WP_MGPLN_PATH . '/includes/');
+define( 'WP_MGPLN_CORE', WP_MGPLN_PATH . '/core/');
+define( 'WP_MGPLN_INCLUDES', WP_MGPLN_CORE . 'includes/');
 
 function wp_mgpln_autoload(){
     require_once WP_MGPLN_INCLUDES . 'wp_mgpln_init.php';
@@ -58,8 +59,8 @@ function wp_mgpln_deactivator(){
         spl_autoload_register('wp_mgpln_autoload');
     try{
        WP_MGPLN_INIT::deactivate();
-    }catch(){
-
+    }catch(WP_Error $error){
+        add_action('admin_notices', 'wp_mgpln_admin_notice', $error->get_error_message());
     }
 }
 
