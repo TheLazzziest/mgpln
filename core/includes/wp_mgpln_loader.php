@@ -69,11 +69,12 @@
         /**
          * Register the filters and actions with WordPress.
          */
-        public function run(){
+        public function run_filters(){
             foreach($this->filters as $filter){
                 add_filter($filter['hook'],[$filter['component'], $hook['callback']], $filter['priority'], $filter['accepted_args']);
             }
-
+        }
+        public function run_actions(){
             foreach($this->actions as $action){
                 add_action($action['action'], [$action['component'], $action['callback']], $action['priority'], $action['accepted_args']);
             }
