@@ -24,21 +24,42 @@ You should have received a copy of the GNU General Public License
 along with {Plugin Name}. If not, see {License URI}.
 */
 
-define( 'WP_MGPLN_PLUGIN', __FILE__);
-define( 'WP_MGPLN_PATH', plugin_dir_path(WP_MGPLN_PLUGIN));
-define( 'WP_MGPLN_CORE', WP_MGPLN_PATH . '/core/');
-define( 'WP_MGPLN_INCLUDES', WP_MGPLN_CORE . 'includes/');
+//Basic debug WP tool
+define( 'WP_DEBUG', true);
 
-function wp_mgpln_autoload(){
-    require_once WP_MGPLN_INCLUDES . 'wp_mgpln_init.php';
-    require_once WP_MGPLN_INCLUDES . 'wp_mgpln.php';
-    define('WP_INIT_OK', true);
+define( 'WP_MGPLN_PLUGIN', __FILE__);
+define( "DS", DIRECTORY_SEPARATOR);
+
+define( 'WP_MGPLN_PATH', plugin_dir_path(WP_MGPLN_PLUGIN));
+define( 'WP_MGPLN_VENDOR', WP_MGPLN_PATH.DS.'vendor');
+
+function wp_mgpln_autoload($class)
+{
+    $file = WP_MGPLN_VENDOR;
+    $class = strreplace("\\","/", $class);
+    $nsParts = explode('/',$class);
+    if(strpos($nsParts[count($nsParst) - 1],'::')){
+        $nsParts[] = explode("::",$nsParts[count($nsParst) - 1]);
+        unset($nsParts[count($nsParst) - 1]);
+    }
+    foreach($nsParts as $filepath){
+        $file .= DS.$filepath;
+    }
+    if(file_exists($file.".php"))
+        require_once $file.".php";
+    else
+        throw WP_ERROR(500, "File $file doesn't exists", var_dump($file));
+}
+
+function run(){
+    $mgpln = new \Vendor\WP_MGPLN();
+    $mgpln->run();
 }
 
 function wp_mgpln_activator(){
-    spl_autoload_register('wp_mgpln_autoload', true);
     try{
-        WP_MGPLN_INIT::activate();
+        spl_autoload_register('wp_mgpln_autoload', true);
+        \Vendor\Init::activate();
     }catch(WP_Error $error){
         add_action('admin_notices', 'wp_mgpln_admin_notice', $error->get_error_message());
     }
@@ -49,24 +70,17 @@ function wp_mgpln_admin_notice($message){
     $notice = '';
     foreach($message as $label => $text){
         $notice .= $label . ': ' . $text . '\n';
-    }
-    echo "<div class=\"\">" . $notice . "</div>";
+    }?>
+    <div class=""><?php _e($notice,'my-text-domain' )?></div>;
+<?php
 }
 
-
 function wp_mgpln_deactivator(){
-    if(!defined(WP_INIT_OK))
-        spl_autoload_register('wp_mgpln_autoload');
     try{
-       WP_MGPLN_INIT::deactivate();
+       Core\Includes\Init::deactivate();
     }catch(WP_Error $error){
         add_action('admin_notices', 'wp_mgpln_admin_notice', $error->get_error_message());
     }
-}
-
-function run(){
-    $mgpln = new wp_mgpln();
-    $mgpln->run();
 }
 
 register_activation_hook(__FILE__, 'wp_mgpln_activate');
