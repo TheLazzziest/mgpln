@@ -35,10 +35,10 @@ define( 'WP_MGPLN_VENDOR', WP_MGPLN_PATH.DS.'vendor');
 
 function wp_mgpln_autoload($class)
 {
-    $file = WP_MGPLN_VENDOR;
+    $file = WP_MGPLN_PATH;
     $class = strreplace("\\","/", $class);
     $nsParts = explode('/',$class);
-    if(strpos($nsParts[count($nsParst) - 1],'::')){
+    if(strpos($nsParts[count($nsParst) - 1],"::")){
         $nsParts[] = explode("::",$nsParts[count($nsParst) - 1]);
         unset($nsParts[count($nsParst) - 1]);
     }
