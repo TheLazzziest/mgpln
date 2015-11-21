@@ -67,7 +67,6 @@ function wp_mgpln_activator(){
     }catch(WP_Error $error){
         add_action('admin_notices', 'wp_mgpln_admin_notice', $error->get_error_message());
     }
-    run();
 }
 
 function wp_mgpln_admin_notice($message){
@@ -89,3 +88,5 @@ function wp_mgpln_deactivator(){
 
 register_activation_hook(__FILE__, 'wp_mgpln_activator');
 register_deactivation_hook(__FILE__, 'wp_mgpln_deactivator');
+
+run();
