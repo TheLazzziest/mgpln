@@ -56,7 +56,7 @@ function wp_mgpln_autoload($class)
 }
 
 function run(){
-    $mgpln = new \Vendor\WP_MGPLN();
+    $mgpln = new \Vendor\Wp_mgpln();
     $mgpln->run();
 }
 
