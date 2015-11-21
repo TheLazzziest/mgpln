@@ -30,25 +30,29 @@ define( 'WP_DEBUG', true);
 define( 'WP_MGPLN_PLUGIN', __FILE__);
 define( "DS", DIRECTORY_SEPARATOR);
 
-define( 'WP_MGPLN_PATH', plugin_dir_path(WP_MGPLN_PLUGIN));
-define( 'WP_MGPLN_VENDOR', WP_MGPLN_PATH.DS.'vendor');
+function formPath($filePath = WP_MGPLN_PLUGIN){
+    $path = plugin_dir_path($filePath);
+    $path[strlen($path)-1] = "\0";
+    return $path;
+}
+
+define( 'WP_MGPLN_PATH', formPath());
 
 function wp_mgpln_autoload($class)
 {
     $file = WP_MGPLN_PATH;
-    $class = strreplace("\\","/", $class);
+    $class = str_replace("\\","/", $class);
     $nsParts = explode('/',$class);
-    if(strpos($nsParts[count($nsParst) - 1],"::")){
-        $nsParts[] = explode("::",$nsParts[count($nsParst) - 1]);
-        unset($nsParts[count($nsParst) - 1]);
+    $nsLength = count($nsParts);
+    foreach($nsParts as $key => $path){
+        $file .= DS;
+        $file .= ($key < $nsLength-1) ? strtolower($path) : $path;
     }
-    foreach($nsParts as $filepath){
-        $file .= DS.$filepath;
-    }
-    if(file_exists($file.".php"))
-        require_once $file.".php";
+    $file = strval(str_replace("\0","",$file.".php")); // @todo find out better solution for file path
+    if(file_exists($file) && is_readable($file))
+        require_once $file;
     else
-        throw WP_ERROR(500, "File $file doesn't exists", var_dump($file));
+        throw new WP_ERROR(500, "File $file doesn't exists", var_dump($file));
 }
 
 function run(){
@@ -58,7 +62,7 @@ function run(){
 
 function wp_mgpln_activator(){
     try{
-        spl_autoload_register('wp_mgpln_autoload', true);
+        spl_autoload_register('wp_mgpln_autoload');
         \Vendor\Init::activate();
     }catch(WP_Error $error){
         add_action('admin_notices', 'wp_mgpln_admin_notice', $error->get_error_message());
@@ -83,5 +87,5 @@ function wp_mgpln_deactivator(){
     }
 }
 
-register_activation_hook(__FILE__, 'wp_mgpln_activate');
-register_deactivation_hook(__FILE__, 'wp_mgpln_deactivate');
+register_activation_hook(__FILE__, 'wp_mgpln_activator');
+register_deactivation_hook(__FILE__, 'wp_mgpln_deactivator');
