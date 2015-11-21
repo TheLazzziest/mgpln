@@ -62,7 +62,6 @@ function run(){
 
 function wp_mgpln_activator(){
     try{
-        spl_autoload_register('wp_mgpln_autoload');
         \Vendor\Init::activate();
     }catch(WP_Error $error){
         add_action('admin_notices', 'wp_mgpln_admin_notice', $error->get_error_message());
@@ -74,7 +73,7 @@ function wp_mgpln_admin_notice($message){
     foreach($message as $label => $text){
         $notice .= $label . ': ' . $text . '\n';
     }?>
-    <div class=""><?php _e($notice,'my-text-domain' )?></div>;
+    <div class=""><?php _e($notice,'megaplan-wp-plugin' )?></div>;
 <?php
 }
 
@@ -89,4 +88,5 @@ function wp_mgpln_deactivator(){
 register_activation_hook(__FILE__, 'wp_mgpln_activator');
 register_deactivation_hook(__FILE__, 'wp_mgpln_deactivator');
 
+spl_autoload_register('wp_mgpln_autoload');
 run();
