@@ -79,7 +79,7 @@ function wp_mgpln_admin_notice($message){
 
 function wp_mgpln_deactivator(){
     try{
-       Core\Includes\Init::deactivate();
+       \Vendor\Init::deactivate();
     }catch(WP_Error $error){
         add_action('admin_notices', 'wp_mgpln_admin_notice', $error->get_error_message());
     }
