@@ -24,69 +24,78 @@ You should have received a copy of the GNU General Public License
 along with {Plugin Name}. If not, see {License URI}.
 */
 
+// Temporary solution for plugin bootstrap security
+defined("ABSPATH") or die("Can't find WP root directory");
+
 //Basic debug WP tool
 define( 'WP_DEBUG', true);
 
-define( 'WP_MGPLN_PLUGIN', __FILE__);
-define( "DS", DIRECTORY_SEPARATOR);
+spl_autoload_register('Mgpln_Bootstrap::_autoload');
+register_activation_hook(__FILE__, ['Mgpln_Bootstrap','_activator']);
+register_deactivation_hook(__FILE__, ['Mgpln_Bootstrap','_deactivator']);
 
-function formPath($filePath = WP_MGPLN_PLUGIN){
-    $path = plugin_dir_path($filePath);
-    $path[strlen($path)-1] = "\0";
-    return $path;
-}
+add_action('plugins_loaded',['Mgpln_Bootstrap','run']);
 
-define( 'WP_MGPLN_PATH', formPath());
-
-function wp_mgpln_autoload($class)
+class Mgpln_Bootstrap
 {
-    $file = WP_MGPLN_PATH;
-    $class = str_replace("\\","/", $class);
-    $nsParts = explode('/',$class);
-    $nsLength = count($nsParts);
-    foreach($nsParts as $key => $path){
-        $file .= DS;
-        $file .= ($key < $nsLength-1) ? strtolower($path) : $path;
+    protected static $instance;
+    public $plugin;
+
+    private function __construct(){
+        $this->plugin = new \Vendor\Wp_mgpln();
+        $this->plugin->run();
     }
-    $file = strval(str_replace("\0","",$file.".php")); // @todo find out better solution for file path
-    if(file_exists($file) && is_readable($file))
-        require_once $file;
-    else
-        throw new WP_ERROR(500, "File $file doesn't exists", var_dump($file));
-}
+    public static function _autoload($class)
+    {
+        $DS = DIRECTORY_SEPARATOR;
+        $file = dirname(__FILE__);
+        $class = str_replace("\\","/", $class);
+        $nsParts = explode('/',$class);
+        $nsLength = count($nsParts);
+        foreach($nsParts as $key => $path){
+            $file .= $DS;
+            $file .= ($key < $nsLength-1) ? strtolower($path) : $path;
+        }
+        $file = strval(str_replace("\0","",$file.".php")); // @todo find out better solution for file path
+        if(file_exists($file) && is_readable($file))
+            require_once $file;
+        else
+            throw new WP_ERROR(500, "File $file doesn't exists", var_dump($file));
+    }
 
-function run(){
-    $mgpln = new \Vendor\Wp_mgpln();
-    $mgpln->run();
-}
+    public static function _activator(){
+        try{
+            \Vendor\Init::activate();
+            define("MGPLN_BOOTSTRAP", TRUE);
+        }catch(WP_Error $error){
+            Mgpln_Bootstrap::admin_notice($error->get_error_message());
+        }
+    }
 
-function wp_mgpln_activator(){
-    try{
-        \Vendor\Init::activate();
-    }catch(WP_Error $error){
-        add_action('admin_notices', 'wp_mgpln_admin_notice', $error->get_error_message());
+    public static function _deactivator(){
+        try{
+            if(!defined("MGPLN_BOOTSTRAP"))
+                throw new WP_Error('violation',"Can't uninstal the plugin");
+           \Vendor\Init::deactivate();
+            define("MGPLN_BOOTSTRAP", NULL);
+        }catch(WP_Error $error){
+            Mgpln_Bootstrap::admin_notice($error->get_error_message());
+        }
+    }
+
+
+    public static function run()
+    {
+        if(!current_user_can('activate_plugins'))
+            throw new Wp_Error('');
+        if(!isset(self::$instance)){
+           self::$instance = new self;
+        }
+        return self::$instance;
+    }
+
+    public static function admin_notice($message)
+    {
+        wp_die("<h2>$message</h2>");
     }
 }
-
-function wp_mgpln_admin_notice($message){
-    $notice = '';
-    foreach($message as $label => $text){
-        $notice .= $label . ': ' . $text . '\n';
-    }?>
-    <div class=""><?php _e($notice,'megaplan-wp-plugin' )?></div>;
-<?php
-}
-
-function wp_mgpln_deactivator(){
-    try{
-       \Vendor\Init::deactivate();
-    }catch(WP_Error $error){
-        add_action('admin_notices', 'wp_mgpln_admin_notice', $error->get_error_message());
-    }
-}
-
-register_activation_hook(__FILE__, 'wp_mgpln_activator');
-register_deactivation_hook(__FILE__, 'wp_mgpln_deactivator');
-
-spl_autoload_register('wp_mgpln_autoload');
-run();
