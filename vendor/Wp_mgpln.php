@@ -1,5 +1,7 @@
 <?php
-namespace \Vendor\Core;
+namespace Vendor;
+
+defined("BOOSTRAPED") or die("Direct access denied");
 
     class Wp_mgpln{
         /*
@@ -27,13 +29,14 @@ namespace \Vendor\Core;
 	    * @var      string    $name    The string used to uniquely identify this plugin.
         * @var      string    $version To identify the version of the plugin
         */
-        public __construct($name = 'Megaplan plugin', $version = 'beta')
+        public function __construct($name = 'Megaplan plugin', $version = 'beta')
         {
             $this->version = $version;
             $this->plugin_name = $name;
             $this->load_dependencies();
             $this->get_loader();
             $this->set_locale();
+
         }
         /*
         * class autoloader
@@ -45,6 +48,7 @@ namespace \Vendor\Core;
         public function run()
         {
             $this->loader->run();
+            Core\Router::start();
         }
 
         /*
@@ -53,13 +57,13 @@ namespace \Vendor\Core;
         */
         private function load_dependecies()
         {
-            require_once
+            $this->loader = new Core\Loader();
         }
 
         //Set language for text
         private function set_locale()
         {
-            $plugin_i18n = new WP_MGPLN_I18N();
+            $plugin_i18n = new Core\I18n();
             $plugin_i18n->set_domain($this->get_plugin_name());
             $this->loader->add_action("plugins_loaded", $plugin_i18n,"load_text_domain");
         }
