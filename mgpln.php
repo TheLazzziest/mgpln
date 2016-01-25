@@ -25,25 +25,25 @@ along with {Plugin Name}. If not, see {License URI}.
 */
 
 // Temporary solution for plugin bootstrap security
-defined("ABSPATH") or die("Can't find WP root directory");
+defined("ABSPATH") or die("I'm only the WP plugin");
 
 //Basic debug WP tool
 define("WP_DEBUG", true);
 
+add_action('admin_notices',['Mgpln_Bootstrap','admin_notice']);
 spl_autoload_register('Mgpln_Bootstrap::_autoload');
 register_activation_hook(__FILE__, ['Mgpln_Bootstrap','_activator']);
 register_deactivation_hook(__FILE__, ['Mgpln_Bootstrap','_deactivator']);
 
-add_action('plugins_loaded',['Mgpln_Bootstrap','run']);
 
 class Mgpln_Bootstrap
 {
-    protected static $instance;
-    public $plugin;
 
-    private function __construct(){
-        $this->plugin = new \Vendor\Wp_mgpln();
-        $this->plugin->run();
+    protected static $instance;
+
+    private function __construct()
+    {
+        self::$instance = new \Vendor\Wp_mgpln();
     }
     //Autoload class for bootstrap component
     public static function _autoload($class)
@@ -57,58 +57,67 @@ class Mgpln_Bootstrap
             $file .= $DS;
             $file .= ($key < $nsLength-1) ? strtolower($path) : $path;
         }
-        $file = strval(str_replace("\0","",$file.".php")); // @todo: find out better solution for file path
+        die($file);
+        $file = strval(str_replace("\0","",$file.".php")); // @TODO: find out better solution for file path
         if(file_exists($file) && is_readable($file))
             require_once $file;
         else
-            throw new WP_Error(500, "File $file doesn't exists", var_dump($file));
+            throw new WP_Error(500, var_dump($file) , "File $file doesn't exists");
     }
 
-    public static function _activator(){
+    public static function _activator()
+    {
         try{
             if(!current_user_can('activate_plugins'))
                 throw new Wp_Error('violation', "You can't activate the plugin");
-            \Vendor\Init::activate();
-            define("INSTALLED", TRUE);
+            if(get_option('mgpln_activated') === FALSE &&\Vendor\Mgpln_Init::activate()){
+                    add_option('mgpln_activated', TRUE);
+            }
         }catch(WP_Error $error){
-            Mgpln_Bootstrap::admin_notice($error->get_error_message());
+            Mgpln_Bootstrap::admin_notice($error->get_error_message(),"error");
         }
     }
 
-    public static function _deactivator(){
-        try{
-            if(!defined("INSTALLED") || !defined("BOOTSTRAPED"))
-                throw new WP_Error('violation',"Can't uninstal the plugin");
-            define("BOOTSTRAPED", NULL);
-           \Vendor\Init::deactivate();
-            define("INSTALLED", NULL);
-        }catch(WP_Error $error){
-            Mgpln_Bootstrap::admin_notice($error->get_error_message());
-        }
-    }
-
-
-    public static function run()
+    public static function _deactivator()
     {
         try{
-            if(!defined("INSTALLED"))
-                throw new WP_Error('violation','Try to install plugin');
+            if(!current_user_can('deactivate_plugins'))
+                throw new WP_Error('violation', "You don't have proper permision","Try to ask admin to deactivate plugin");
+            if(get_option('mgpln_activated') === false)
+                throw new WP_Error('violation',"Plugin is turned off",var_dump("Try to install the plugin"));
+            if(\Vendor\Mgpln_Init::deactivate())
+                delete_option('mgpln_activated');
+        }catch(WP_Error $error){
+            Mgpln_Bootstrap::admin_notice($error->get_error_message(),"error");
+        }
+    }
+
+
+    public static function bootstrap()
+    {
+        try{
+            if(get_option('mgpln_activated'))
+                throw new WP_Error('violation','Try to install plugin',var_dump('Try to install the plugin'));
+            add_option('mgpln_bootstrapped',TRUE,TRUE);
             if(empty(self::$instance)){
                self::$instance = new self;
             }
-            define("BOOTSTRAPED", TRUE);
-            return self::$instance;
+
+            self::$instance->run();
+
         }catch(WP_Error $e){
-            Mgpln_Bootstrap::admin_notice($error->get_error_message());
+            Mgpln_Bootstrap::admin_notice($error->get_error_message(),"error");
         }catch(Exception $e){
-            Mgpln_Bootstrap::admin_notice($error->getMessage());
+            Mgpln_Bootstrap::admin_notice($error->getMessage(),"error");
         }finally{
-            Mgpln_Bootstrap::admin_notice("Unknown error");
+            Mgpln_Bootstrap::admin_notice("Unknown error","error");
         }
     }
 
-    public static function admin_notice($message)
+    public static function admin_notice($message,$class)
     {
-        die("<h2>$message</h2>");
+        return "<div class=\"$class\""._e($message,'my-text-domain')."</div>";
     }
 }
+
+Mgpln_Bootstrap::bootstrap();
