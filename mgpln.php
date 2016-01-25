@@ -116,7 +116,7 @@ class Mgpln_Bootstrap
 
     public static function admin_notice($message,$class)
     {
-        return "<div class=\"$class\""._e($message,'my-text-domain')."</div>";
+        return "<div class=\"$class\"".__($message,'mgpln')."</div>";
     }
 }
 
