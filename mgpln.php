@@ -8,7 +8,7 @@
     License: GPL2
     License URI: https://www.gnu.org/licenses/gpl-2.0.html
     Text Domain: megaplan-wp-plugin
-    Domain Path: /languages
+    Domain Path: /vendor/languages
 
 {Plugin Name} is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -41,10 +41,6 @@ class Mgpln_Bootstrap
 
     protected static $instance;
 
-    private function __construct()
-    {
-        self::$instance = new \Vendor\Wp_mgpln();
-    }
     //Autoload class for bootstrap component
     public static function _autoload($class)
     {
@@ -57,7 +53,6 @@ class Mgpln_Bootstrap
             $file .= $DS;
             $file .= ($key < $nsLength-1) ? strtolower($path) : $path;
         }
-        die($file);
         $file = strval(str_replace("\0","",$file.".php")); // @TODO: find out better solution for file path
         if(file_exists($file) && is_readable($file))
             require_once $file;
@@ -100,7 +95,7 @@ class Mgpln_Bootstrap
                 throw new WP_Error('violation','Try to install plugin',var_dump('Try to install the plugin'));
             add_option('mgpln_bootstrapped',TRUE,TRUE);
             if(empty(self::$instance)){
-               self::$instance = new self;
+                self::$instance = new \Vendor\Wp_mgpln();
             }
 
             self::$instance->run();
