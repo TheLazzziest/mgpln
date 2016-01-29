@@ -8,5 +8,7 @@ interface BaseActiveRecordInterface extends QueryBase {
     public function insert();
     public function update();
     public function delete();
+    public function where();
+    public function from();
 }
 ?>;
