@@ -2,7 +2,7 @@
 namespace Vendor\Db;
 
 use Vendor\Tools\Helpers;
-use ArrayObject;
+use \ArrayObject;
 
 final class Migration extends QueryBase
 {
@@ -17,16 +17,20 @@ final class Migration extends QueryBase
      * @param string $table_name
      * @param array $columns['col_name' => 'properties']
      *
-     * @return QueryResult @TODO: determine the result of the query
+     * @return QueryResult bool
      */
     public function createTable( $table_name, array $columns){
-        $table_name = $this->prefix . $table_name;
+        $table_name = $this->_prefix . $table_name;
         $col_iterator = new ArrayObject($columns);
         $table_columns = $this->formatColumns($col_iterator);
-        $sql = "CREATE TABLE IF NOT EXISTS $table_name ( $table_columns ) DEFAULT CHARACTER SET $this->charset COLLATE $this->collate;";
+        $sql = "CREATE TABLE IF NOT EXISTS $table_name ( {$table_columns} ) DEFAULT CHARACTER SET {$this->_charset} COLLATE {$this->_collate};";
         return $this->query($sql);
     }
 
+    /**
+     * @param ArrayObject $columns
+     * @return string
+     */
     private function formatColumns(ArrayObject $columns){
         $table_columns = "\n";
         for($iterator = $columns->getIterator(), $i = 1; $iterator->valid(); $iterator->next()){
@@ -37,15 +41,15 @@ final class Migration extends QueryBase
     }
 
     /**
-     * Drop table of plugin
+     * Drop table of the plugin
      * @since 1.0.0
      *
      * @param string $table_name
      *
-     * @return QueryResult @TODO: determine the result of the query
+     * @return QueryResult bool
      */
-    public function dropTable( $table_name){
-        $sql = "DROP TABLE IF EXISTS $this->prefix.$table_name";
+    public function dropTable($table_name){
+        $sql = "DROP TABLE IF EXISTS " . $this->_prefix . $table_name;
         return $this->query($sql);
     }
 
