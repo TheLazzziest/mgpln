@@ -23,7 +23,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with {Plugin Name}. If not, see {License URI}.
 */
-
 // Temporary solution for plugin bootstrap security
 defined("ABSPATH") or die("I'm only the WP plugin");
 
@@ -40,23 +39,25 @@ class MegaformsBootstrap
 
     protected static $instance;
 
+    private static $parentNs = 'Megaforms';
+
     //Autoload class for bootstrap component
+    // One VERY IMPORTANT thing, when an autoload function is used in wp plugin
+    // it must check that a file is reffer to namespace of the current plugin
+
     public static function autoload($class)
     {
-        $DS = DIRECTORY_SEPARATOR;
         $file = dirname(__FILE__);
         $class = str_replace("\\","/", $class);
         $nsParts = explode('/',$class);
-        $nsLength = count($nsParts);
-        foreach($nsParts as $key => $path){
-            $file .= $DS;
-            $file .= ($key < $nsLength-1) ? strtolower($path) : $path;
+        if(!strcmp($nsParts[0],self::$parentNs)) {
+            array_shift($nsParts);
+            $file = sprintf("%s/%s.php",$file,implode('/',$nsParts));
+            if(file_exists($file) && is_readable($file))
+                require_once $file;
+            else
+                throw new \Exception("File $file doesn't exists");
         }
-        $file = strval(str_replace("\0","",$file.".php")); // @TODO: find out better solution for file path
-        if(file_exists($file) && is_readable($file))
-            require_once $file;
-        else
-            throw new Exception("File $file doesn't exists");
     }
 
     public static function activator()
@@ -64,10 +65,10 @@ class MegaformsBootstrap
         spl_autoload_register('MegaformsBootstrap::autoload');
         try{
             if(!current_user_can('activate_plugins'))
-                wp_die("User can't activate plugins");
-            \Vendor\MegaformsInit::activate();
+                throw new \Exception("User can't activate plugins");
+            \Megaforms\Vendor\MegaformsInit::activate();
         }catch(\Exception $error){
-            \Vendor\Tools\Helpers::handle_exception($error);
+            \Megaforms\Vendor\Libs\Helpers::handle_exception($error);
         }
     }
 
@@ -75,11 +76,11 @@ class MegaformsBootstrap
     {
         spl_autoload_register('MegaformsBootstrap::autoload');
         try{
-            if(!current_user_can('activate_plugins')) //@TODO: check for better condition for deactivation
-                die("User can't deactivate plugins");
-            \Vendor\MegaformsInit::deactivate();
+            if(!current_user_can('activate_plugins')) //@TODO: check condition for deactivation
+                throw new \Exception("User can't deactivate plugins");
+            \Megaforms\Vendor\MegaformsInit::deactivate();
         }catch(\Exception $error){
-            \Vendor\Tools\Helpers::handle_exception($error);
+            \Megaforms\Vendor\Libs\Helpers::handle_exception($error);
         }
     }
 
@@ -89,14 +90,14 @@ class MegaformsBootstrap
         spl_autoload_register('MegaformsBootstrap::autoload');
         try{
             if(empty(self::$instance)){
-                self::$instance = new \Vendor\Plugin();
+                self::$instance = new \Megaforms\Vendor\Plugin();
             }
 
             self::$instance->run();
 
         }catch(Exception $error){
-            \Vendor\Tools\Helpers::handle_exception($error);
-        }finally{
+            \Megaforms\Vendor\Libs\Helpers::handle_exception($error);
+        }finally{ // in order to see server logs concerning some system error, comment finally block
             die(__("System error occured. Apply to plugin developers","megaforms"));
         }
     }
