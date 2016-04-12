@@ -1,3 +1,3 @@
 <?php
-    echo "Base class"
+    // The silence is golden
 ?>
