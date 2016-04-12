@@ -1,34 +1,29 @@
 <?php
 namespace Megaforms\Vendor\Core;
 
-use \ArrayAccess;
+use Megaforms\Vendor\Exceptions\CoreException;
 
-final class Registry implements ArrayAccess{
+defined("MEGAFORMS_BOOTSTRAPPED") or die("I'm only the wp plugin");
 
-    protected $_container;
+/**
+ * Class Core\Registry
+ */
+trait Registry {
 
-    public function offsetSet($key, $value){
-        if(!$this->offsetExists($key))
-            $this->_container[$key] = $value;
+    private static $instance;
+    //** @propety array $container object storage container */
+    private $_container = [];
+
+
+    public static function getInstance(){
+        if(empty(self::$instance)
+            || ! (self::$instance instanceof Registry)){
+            self::$instance = new Registry([],\ArrayObject::ARRAY_AS_PROPS);
+        }
+        return self::$instance;
     }
 
-    public function offsetExists($key){
-        return array_key_exists($key,$this->_container);
-    }
 
-    public function offsetGet($key){
-        if($this->offsetExists($key))
-            return $this->_container[$key];
-        else
-            throw new \Exception("Property doesn't exist");
-    }
-
-    public function offsetUnset($key){
-        if($this->offsetExists($key))
-            unset($this->_container[$key]);
-        else
-            throw new \Exception("You can not unset undefined property");
-    }
 
 }
 
