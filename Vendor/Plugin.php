@@ -45,7 +45,7 @@ final class Plugin{
      * Main run function
      */
     public function run()
-        {   /** @class Router */
+        {   /** @var Router */
             Router::load()->start();
             Loader::load()->run();
         }
