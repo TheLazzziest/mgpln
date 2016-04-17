@@ -12,7 +12,7 @@ namespace Megaforms\Vendor\Exceptions;
 class RuntimeException extends MegaformsException
 {
     protected $Errors = [
-        self::MISSING_FILE => 'Missing file'
+        self::MISSING_FILE => 'Missing file '
     ];
 
     const MISSING_FILE = 120;
