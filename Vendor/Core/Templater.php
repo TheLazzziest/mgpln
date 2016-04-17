@@ -7,7 +7,6 @@ use Megaforms\Vendor\Exceptions\ArgException;
 use Megaforms\Vendor\Exceptions\HTTPException;
 use Megaforms\Vendor\Libs\Helpers\CommonHelpers;
 use megaforms\Vendor\Libs\Helpers\Http;
-use Megaforms\Vendor\Libs\Helpers\PluginDataSet;
 use Megaforms\Vendor\Libs\View\Twig\Twig_Autoloader;
 use Megaforms\Vendor\Libs\Traits\Registry;
 use Megaforms\Vendor\Libs\View\TemplateInterface;
@@ -186,8 +185,7 @@ final class Templater implements TemplateInterface
     public function render()
     {
         $this->_file .= !strpos($this->_file,'.') ? self::HTML_EXT : '';
-        include_once(PluginDataSet::load()->views_path . $this->_file);
-//        return $this->_renderer->render($this->_file,$this->_params);
+        return $this->_renderer->render($this->_file,$this->_params);
     }
 
 }
