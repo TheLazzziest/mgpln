@@ -5,14 +5,12 @@ use Megaforms\Vendor\Db\Adapter;
 use Megaforms\Vendor\Exceptions\DbException;
 
 
+/**
+ * Class QueryBase
+ * @package Megaforms\Vendor\Db\Query
+ */
 abstract class QueryBase
 {
-    //Error Codes
-    const UNDEFINED_QUERY_TYPE = 400;
-    const UNDEFINED_RESULT_QUERY_TYPE = 401;
-    const VALUE_TYPE_VIOLATION = 405;
-
-    //
 
     //
     const MIN_INDEX = 0;
@@ -113,7 +111,7 @@ abstract class QueryBase
      */
     protected function addQuery($result = false, $resultType = false){
         if($this->isQueryEmpty()) {
-            throw new DbException("Empty query string");
+            throw new DbException("Empty query string", DbException::EMPTY_QUERY);
         }
         $this->qQuantity++;
 
@@ -133,15 +131,15 @@ abstract class QueryBase
                 $this->results[$theHash] = [$result, 'resultType' => $resultType];
             }else{
                 throw new DbException(
-                    "Undefined result query type. Result query type must be one of types:" . array_walk($this->objTypes,'print'),
-                    self::UNDEFINED_RESULT_QUERY_TYPE
+                    DbException::UNDEFINED_RESULT_QUERY_TYPE,
+                    [$resultType]
                 );
             }
 
         }else{
             throw new DbException(
-                "Result value type violation. Result must be of boolean type",
-                self::VALUE_TYPE_VIOLATION
+                DbException::VALUE_TYPE_VIOLATION,
+                [$result]
             );
         }
 
@@ -160,7 +158,9 @@ abstract class QueryBase
      */
     protected function addPrepare($bindings,$result = false, $resultType = false){
         if($this->isQueryEmpty()) {
-            throw new DbException("Empty query string");
+            throw new DbException(
+                DbException::EMPTY_QUERY
+            );
         }
         $this->qQuantity++;
 
@@ -181,15 +181,15 @@ abstract class QueryBase
                 ];
             }else{
                 throw new DbException(
-                    "Undefined result query type. Result query type must be one of types:" . array_walk($this->objTypes,'print'),
-                    self::UNDEFINED_RESULT_QUERY_TYPE
+                    DbException::UNDEFINED_RESULT_QUERY_TYPE,
+                    [$resultType]
                 );
             }
         }else{
 
             throw new DbException(
-                "Result value type violation. Result must be of boolean type",
-                self::VALUE_TYPE_VIOLATION
+                DbException::VALUE_TYPE_VIOLATION,
+                [$result]
             );
         }
 
@@ -227,10 +227,16 @@ abstract class QueryBase
         }else if(is_string($qHashIndex) || !empty($qHashIndex)){
             $qIndex = $this->findHashIndex($qHashIndex);
             if($qIndex === false){
-                throw new DbException("The hash {$qHashIndex} doesn't exist", self::NON_EXISTING_HASH);
+                throw new DbException(
+                    DbException::NON_EXISTING_HASH,
+                    [ $qHashIndex ]
+                );
             }
         }else{
-            throw new DbException('Undefined query hash index', self::UNDEFINED_QUERY_HASH_INDEX);
+            throw new DbException(
+                DbException::UNDEFINED_QUERY_HASH_INDEX,
+                [ $qHashIndex ]
+            );
         }
 
 
@@ -250,7 +256,7 @@ abstract class QueryBase
      */
     protected function execute($pHashIndex = false){
         if($this->isQueryStackEmpty())
-            return null;
+            return -1;
 
         if(is_bool($pHashIndex) && $pHashIndex === false){
             $lastHashIndex = count($this->queries) - 1;
@@ -258,9 +264,9 @@ abstract class QueryBase
         }else if(is_string($pHashIndex) || !empty($pHashIndex)){
             $pIndex = $this->findHashIndex($pHashIndex);
             if($pIndex === false)
-                throw new DbException("The hash {$pHashIndex} doesn't exist", self::NON_EXISTING_HASH);
+                throw new DbException("The hash {$pHashIndex} doesn't exist", DbException::NON_EXISTING_HASH);
         }else{
-            throw new DbException('Undefined query hash index', self::UNDEFINED_QUERY_HASH_INDEX);
+            throw new DbException('Undefined query hash index', DbException::UNDEFINED_QUERY_HASH_INDEX);
         }
 
         if($this->withResult($this->results[$pHashIndex])){
@@ -278,8 +284,11 @@ abstract class QueryBase
      *
      */
     private function removeFiredQuery($hashIndex){
-        if($this->isQueryStackEmpty())
-            throw new DbException("Query stack is empty");
+        if($this->isQueryStackEmpty()){
+            throw new DbException(
+                DbException::EMPTY_QUERY_STACK
+            );
+        }
 
         $firedQuery = $this->queries[$hashIndex];
         $qType = $this->findFiredQueryType();
@@ -312,7 +321,10 @@ abstract class QueryBase
         } else if(!strcmp($queryType,'doQuery')) {
             $this->OldQueries[$hashKey] = ['query' => $firedQuery];
         }else{
-            throw new DbException("Undefined type of fired query");
+            throw new DbException(
+                DbException::UNDEFINED_QUERY_TYPE,
+                [ $firedQuery ]
+            );
         }
     }
 
@@ -323,7 +335,9 @@ abstract class QueryBase
         $tracePath = debug_backtrace();
         $value = $this->findTypeByDebugKey($tracePath,['function'],['execute','doQuery']);
         if($value === null) {
-            throw new DbException('Undefined query type', self::UNDEFINED_QUERY_TYPE);
+            throw new DbException(
+                DbException::UNDEFINED_QUERY_TYPE
+            );
         }
         return $value;
     }
@@ -372,7 +386,9 @@ abstract class QueryBase
      */
     protected function getQueryResult($hash){
         if (!is_string($hash) || empty($hash)) {
-            throw new DbException("Undefined hash index", self::HASH_INDEX);
+            throw new DbException(
+                DbException::UNDEFINED_QUERY_HASH_INDEX
+            );
         }
         return $this->results[$hash];
     }
@@ -385,7 +401,6 @@ abstract class QueryBase
         if(is_string($characters)) {
             return rtrim($this->query, $characters);
         }
-        return $this->query;
     }
     /**
      * @return bool

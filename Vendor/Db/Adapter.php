@@ -42,9 +42,9 @@ final class Adapter
             $config = $settings;
         }
         if (empty($config) || count($config) < self::MIN_PARAMS ) {
-            // @TODO: fix error code
             throw new DbException(
-                "Plugin db error. Missing db configuration set", 500
+                DbException::MISSING_SETTINGS,
+                $config
             );
         }
 

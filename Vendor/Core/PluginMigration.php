@@ -6,14 +6,19 @@
  * Time: 9:56
  */
 
-namespace Megaforms\Vendor\Db;
+namespace Megaforms\Vendor\Core;
 
 
 use Megaforms\Vendor\Db\Migration\AbstractMigration;
+use Megaforms\Vendor\Libs\Traits\Registry;
 
 final class PluginMigration extends AbstractMigration
 {
+    use Registry;
 
+	/**
+     * Adding plugin tables to WP
+     */
     public function up()
     {
         $this->tManager->createTable('megaforms_api', true);
@@ -70,6 +75,11 @@ final class PluginMigration extends AbstractMigration
         $this->commit();
     }
 
+	/**
+     * Remove tables from WP
+     * @access public
+     *
+     */
     public function down()
     {
         self::$queries[] = $this->tManager->removeTable('megaforms_form_entries');

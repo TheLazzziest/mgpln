@@ -1,19 +1,26 @@
 <?php
 namespace Megaforms\Vendor\Core;
 
+use Megaforms\Vendor\Exceptions\ArgException;
 use Megaforms\Vendor\Exceptions\CoreException;
-use Megaforms\Vendor\Libs\Settings;
-use Megaforms\Vendor\Libs\Shortcuts;
-use Megaforms\Vendor\Plugin;
+use Megaforms\Vendor\Libs\Helpers\Http;
+use Megaforms\Vendor\Libs\Helpers\PluginDataSet;
+//use Megaforms\Vendor\Libs\Shortcuts;
+use Megaforms\Vendor\Libs\Traits\Registry;
+use Megaforms\Vendor\Libs\Wpapi\Loader;
+use Megaforms\Vendor\Libs\Wpapi\Settings;
 
 defined("MEGAFORMS_BOOTSTRAPPED") or die("I'm only the wp plugin");
 
+/**
+ * Final Class Router
+ * @since 1.0.0
+ * @method static $this instance
+ * @package Megaforms\Vendor\Core
+ */
 final class Router {
-    /**
-     * URL to http://site.domain/wp-admin/admin.php
-     * @var string
-     */
-    protected $_is_admin_area;
+
+    use Registry;
 
     /** @var string */
     protected $_page = '';
@@ -28,46 +35,22 @@ final class Router {
     protected $_param;
 
     /** @var bool */
-    protected $_is_ajax = FALSE;
+
 
     /** @var string */
     protected $_ajax_prefix = 'wp_megaforms_ajax';
 
-    /** @var Settings Api class */
-    protected $_settings;
-
-    /** @var Shortcuts Api class */
-    protected $_shortcuts;
 
     /**
      * List of admin pages in megaforms plugin
      * @var array
      */
     protected $_admin_pages = [
-        'PluginManager'
+        'MegaformsPage' => __DIR__ . '/MegaformsPage.php'
     ];
 
     /** @var  array list of Admin sub-pages */
     protected $_admin_sub_pages;
-
-    public function __construct()
-    {
-        $this->_is_admin_area = is_admin();
-        $this->_is_ajax = $this->isAjax();
-        if($this->_is_admin_area){
-            $this->parseRequest();
-        }
-
-        Registry::getInstance()->loader->add_action(
-            'admin_menu',
-            $this,
-            'init_admin_settings'
-        );
-//        Plugin::$registry->loader->add_action(
-//            'plugin_action_links_'.Plugin::$plugin_name,
-//            $this
-//        );
-    }
 
     /**
      * Parse url params in order to form path the controller in admin folder
@@ -79,84 +62,119 @@ final class Router {
         $this->_controller  = empty($_REQUEST['controller']) ? 'FormController' : $_REQUEST['controller'];
         $this->_action = empty($_REQUEST['action']) ? 'index' : $_REQUEST['action'];
         // @TODO: to finish params section after routing will be set up
-        $this->_param = empty($_REQUEST['params']) ? '' : $_REQUEST['params'];
-    }
-
-    private function isAjax(){
-        return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+        $this->_param = empty($_REQUEST['params']) ? [] : $_REQUEST['params'];
     }
 
     /**
      * Form access path to particular page file in admin folder
      */
-    private function formPathToAdmin(){
-        $path = explode('/',Plugin::$plugin_path);
-        $path[count($path)-1] = 'admin';
-        $fullPath = sprintf('%s/%s.php', implode('/',$path),$this->_page);
-        return $fullPath;
+    private function formPath(){
+        if(in_array($this->_page,array_keys($this->_admin_pages))){
+            return $this->_admin_pages[$this->_page];
+        }else{
+            throw new ArgException(ArgException::WRONG_PARAMETER,
+                [$this->_page]
+            );
+        }
     }
 
     private function isPluginRoute(){
+
         return !empty($this->_page) &&
                 array_key_exists($this->_page,$this->_admin_pages) &&
                 !empty($this->_controller) &&
                 !empty($this->_action);
+
+    }
+
+    /**
+     * Check the existence of the destination file
+     * @param $routeToFile
+     * @return bool|int
+     */
+    private function followRoute($routeToFile){
+        if(is_file($routeToFile) && is_readable($routeToFile)){
+            return true;
+        }else{
+            return CoreException::UNDEFINED_ROUTE;
+        }
+    }
+
+    private function formFullPath($class){
+        return __NAMESPACE__ . '\\' . $class;
+    }
+
+    private function isPathCorrect(){
+        if(!class_exists($this->formFullPath($this->_controller)) ){
+            return CoreException::UNDEFINED_CONTROLLER ;
+        }else if(!method_exists($this->formFullPath($this->_controller), $this->_action)){
+            return CoreException::UNDEFINED_ACTION ;
+        }
+
+        return true;
+
+
     }
 
     public function init_admin_settings(){
 
-        Registry::getInstance()->settings->add_admin_settings_page(
+        Settings::load()->add_admin_settings_page(
             'Megaforms Settings',
             'Megaforms',
             'manage_options',
-            'PluginManager',
-            [$this,'start'],
+            'MegaformsPage',
+            [$this,'start'], // in order to make routing always add to function Router method start
             'dashicons-format-aside',
-            (float)(59.5 . srand(time())%rand(1,999))
+            (float)(59.9 . srand(time())%rand(1,999))
         );
 
-        Registry::getInstance()->settings->register_admin_settings_pages();
+        Loader::load()->add_action(
+            'admin_menu',
+            Settings::load(),
+            'register_admin_settings_pages'
+        );
+
+
     }
 
 
     public function start()
     {
-        if($this->_is_ajax){
-            // TODO: return content
+        PluginDataSet::load()->is_ajax = Http::load()->isAjax();
+
+        if(is_admin() && !PluginDataSet::load()->is_ajax){
+            $this->init_admin_settings();
         }
+
+        $this->parseRequest();
+
+
         if(!$this->isPluginRoute()){
             return ;
         }
 
-        $currentPage = $this->formPathToAdmin();
+        $currentPage = $this->formPath();
 
-        if(is_file($currentPage) && is_readable($currentPage)){
-            include_once $currentPage;
+        if(($error = $this->followRoute($currentPage)) === false){
+            throw new CoreException($error,[$currentPage]);
         }else{
-            throw new CoreException(
-                "Undefined route $currentPage",
-                CoreException::UNDEFINED_ROUTE
-            );
+            include_once $currentPage;
         }
 
-        if(!class_exists($this->_controller)){
+        if(($error = $this->isPathCorrect()) !== true){
             throw new CoreException(
-                "Undefined controller $this->_controller",
-                CoreException::UNDEFINED_CONTROLLER
-            );
+                $error,
+                [
+                    $this->_page,
+                    $this->_controller,
+                    $this->_action
+                ]);
         }
 
-        if(!method_exists($this->_controller,$this->_action)){
-            throw new CoreException(
-                "Undefined action $this->_controller->$this->_action",
-                CoreException::UNDEFINED_ACTION
-            );
-        }
+        $classname = $this->formFullPath($this->_controller);
+        $currentController = new $classname();
+        call_user_func_array([$currentController,$this->_action],$this->_param);
 
-        $currentController = new $this->_controller();
-        $currentController->{$this->_action}();
     }
-
 }
 ?>

@@ -11,5 +11,9 @@ namespace Megaforms\Vendor\Exceptions;
 
 class MegaformsException extends \Exception
 {
+    protected $Errors = [];
 
+    public function __construct($message,$errCode){
+        parent::__construct($message,$errCode);
+    }
 }

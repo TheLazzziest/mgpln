@@ -1,3 +1,2 @@
 <?php
-    echo "Base frontend class";
-?>
+    // Silence is golden

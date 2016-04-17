@@ -1,6 +1,7 @@
 <?php
+namespace Megaforms\Vendor\Core;
 
-use Megaforms\Vendor\Libs\Controller\BaseController;
+use Megaforms\Vendor\Libs\Controller\AbstractController;
 
 defined("MEGAFORMS_BOOTSTRAPPED") or die("I'm only the wp plugin");
 /**
@@ -11,14 +12,18 @@ defined("MEGAFORMS_BOOTSTRAPPED") or die("I'm only the wp plugin");
  */
 
 
-final class FormController extends BaseController{
+final class FormController extends AbstractController{
 
     /**
      *
      */
-    public function index(){
-        print "Hello";
-//        $this->_view->render('index');
+    public function __construct(){
+        parent::__construct();
+    }
+
+    public function index()
+    {
+        $this->render('index.php',['word' => 'Hello']);
     }
 
 
@@ -45,7 +50,11 @@ final class FormController extends BaseController{
     }
 }
 
-final class ApiController extends BaseController{
+/**
+ * Class ApiController
+ * @package Megaforms\Vendor\Core
+ */
+final class ApiController extends AbstractController{
 
     /**
      *
@@ -54,6 +63,9 @@ final class ApiController extends BaseController{
 
     }
 
+    /**
+     * @param $api
+     */
     public function setUp($api){
 
     }

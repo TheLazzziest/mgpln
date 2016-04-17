@@ -1,19 +1,24 @@
 <?php
 namespace Megaforms\Vendor\Libs\Wpapi;
 
-use Megaforms\Vendor\Exceptions\MegaformsException;
+use Megaforms\Vendor\Exceptions\ArgException;
+use Megaforms\Vendor\Exceptions\LibsException;
 use Megaforms\Vendor\Libs\Helpers\CommonHelpers;
+use Megaforms\Vendor\Libs\Helpers\PluginDataSet;
+use Megaforms\Vendor\Libs\Traits\Registry;
 use Megaforms\Vendor\Plugin;
 
-class PluginChecker {
+final class PluginChecker {
 
+    use Registry;
     private $_plugin_path;
 
     public function __construct($plugin_path){
 
         if(!is_string($plugin_path) && empty(CommonHelpers::strim($plugin_path))){
-            throw new MegaformsException(
-                __('Inproper type of parameter', Plugin::$plugin_name)
+            throw new ArgException(
+                ArgException::INVALID_PARAMETER_TYPE,
+                [__('Inproper type of parameter', PluginDataSet::load()->plugin_name)]
             );
         }
         $this->_plugin_path = $plugin_path;

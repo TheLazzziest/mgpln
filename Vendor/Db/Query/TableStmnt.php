@@ -8,7 +8,6 @@
 
 namespace Megaforms\Vendor\Db\Query;
 
-use Megaforms\Vendor\Db\Query\QueryBase;
 
 abstract class TableStmnt extends QueryBase
 {
@@ -35,8 +34,7 @@ abstract class TableStmnt extends QueryBase
      * @return $this
      */
     protected function endCreateTable(){
-        // @TODO: check right side of the string for unnecessary characters
-        $this->query = $this->cleanQueryTail("\x20,.");
+        $this->cleanQueryTail("\x20,.");
         $this->query .= " )";
         return $this;
     }
@@ -196,7 +194,7 @@ abstract class TableStmnt extends QueryBase
      * @return $this
      */
     protected function addCharset($charset = false){
-        $this->query .= "DEFAULT CHARACTER SET " . $this->charset . ' ';
+        $this->query .= "DEFAULT CHARACTER SET " .($charset !== false) ? $charset : $this->charset . ' ';
         return $this;
     }
 

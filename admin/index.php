@@ -1,3 +1,3 @@
 <?php
-    // The silence is golden
+    // Silence is golden
 ?>

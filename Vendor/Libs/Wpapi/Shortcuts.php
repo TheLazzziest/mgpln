@@ -9,13 +9,13 @@
 namespace Megaforms\Vendor\Libs;
 
 
-use Megaforms\Vendor\Core\Loader;
-use Megaforms\Vendor\Exceptions\LibsException;
+use Megaforms\Vendor\Libs\Traits\Registry;
 
 defined("MEGAFORMS_BOOTSTRAPPED") or die("I'm only the wp plugin");
 
 final class Shortcuts
 {
+    use Registry;
     // the collection of action links of settings for the plugin
     private $_action_links = [];
 

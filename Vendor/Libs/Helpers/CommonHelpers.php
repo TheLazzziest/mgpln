@@ -1,5 +1,7 @@
 <?php
 namespace Megaforms\Vendor\Libs\Helpers;
+use Megaforms\Vendor\Exceptions\ArgException;
+use Megaforms\Vendor\Exceptions\FileException;
 
 
 /**
@@ -8,6 +10,16 @@ namespace Megaforms\Vendor\Libs\Helpers;
  */
 class CommonHelpers
 {
+
+    /**
+     * Topic concerning this method
+     * @link: http://stackoverflow.com/questions/173400/how-to-check-if-php-array-is-associative-or-sequential
+     * @param array $array
+     * @return bool
+     */
+    public static function isAssoc(array $array){
+        return array_keys($array) !== range(0,count($array) -1);
+    }
 	/**
 	 * Add or remove ".min" to path based on AMOFORMS_USE_MIN_JS
 	 * @since 1.0.0
@@ -111,7 +123,7 @@ class CommonHelpers
 	 * @param array  $array - array for checking
 	 * @param array  $keys  - array of keys that should be checked: [id, settings => [email => [name, subject, to]]]
 	 * @param string $prefix - internal parameter for building path of array keys
-	 * @throws Validate
+	 * @throws ArgException
 	 */
 	public static function validate_for_empty(array $array, array $keys, $prefix = '')
 	{
@@ -119,20 +131,29 @@ class CommonHelpers
 			if (is_array($value)) {
 				$path = $prefix . "[$key]";
 				if (empty($array[$key])) {
-					throw new Validate("Empty $path");
+					throw new ArgException(
+						ArgException::WRONG_PARAMETER,
+						["Empty $path"]
+					);
 				}
 				self::validate_for_empty($array[$key], $value, $path);
 			} else {
 				if (is_string($key) && is_string($value)) {
 					$path = $prefix . "[$key][$value]";
 					if (empty($array[$key][$value])) {
-						throw new Validate("Empty $path");
+						throw new ArgException(
+							ArgException::WRONG_PARAMETER,
+							["Empty $path"]
+						);
 					}
 				} else {
 					$key = (string)$value;
 					$path = $prefix . "[$key]";
 					if (empty($array[$key])) {
-						throw new Validate("Empty $path");
+						throw new ArgException(
+                            ArgException::WRONG_PARAMETER,
+                            ["Empty $path"]
+                        );
 					}
 				}
 			}
@@ -158,6 +179,33 @@ class CommonHelpers
 			var_dump($e).
 			"</pre>";
 //			}
+		}
+		return "Error";
+	}
+
+	/**
+	 * Load files from external sources
+	 * @param $path
+	 * @return string
+	 * @throws FileException
+     */
+	public static function loadFile($path,$fileName){
+		$libContent = file_get_contents($path);
+		if(is_writable(PluginDataSet::load()->uploads_path)){
+			$localPath = PluginDataSet::load()->uploads_path . $fileName;
+			if(file_put_contents($localPath,$libContent)){
+				return $localPath;
+			}else{
+				throw new FileException(
+					FileException::WRITTING_ERROR,
+					[$localPath]
+				);
+			}
+		}else{
+			throw new FileException(
+				FileException::INACCESSIBLE_PATH,
+				[$path]
+			);
 		}
 	}
 }

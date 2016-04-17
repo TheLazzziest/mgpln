@@ -37,13 +37,20 @@
  */
 
 
-// Temporary solution for plugin bootstrap security
-
 defined("WPINC") or die("I'm only the WP plugin");
 
+/**
+ * Boot
+ * Class MegaformsBootstrap
+ * Package Megaforms
+ */
 final class MegaformsBootstrap
 {
 
+    /**
+     * Key for the plugin scope
+     * @property string
+     */
     private static $_parentNs = 'Megaforms';
 
     //Autoload class for bootstrap component
@@ -71,7 +78,10 @@ final class MegaformsBootstrap
             if (file_exists($file) && is_readable($file)) {
                 include_once $file;
             } else {
-                throw new Megaforms\Vendor\Exceptions\MegaformsException("File $file doesn't exists");
+                throw new Megaforms\Vendor\Exceptions\RuntimeException(
+                    \Megaforms\Vendor\Exceptions\RuntimeException::MISSING_FILE,
+                    [ $file ]
+                    );
             }
         }
     }
@@ -94,9 +104,10 @@ final class MegaformsBootstrap
 //
 //                throw new \Exception("User can't activate plugins");
 //            }
-//            \Megaforms\Vendor\Init::activate();
+            \Megaforms\Vendor\Init::activate();
         }catch(\Exception $error){
-            Megaforms\Vendor\Libs\Helpers\CommonHelpers::handle_exception($error);
+            $error = Megaforms\Vendor\Libs\Helpers\CommonHelpers::handle_exception($error);
+            MegaformsBootstrap::admin_notice($error);
         }
     }
 
@@ -113,21 +124,20 @@ final class MegaformsBootstrap
             // Error based on capabilities.php
             // Topic : https://wordpress.org/support/topic/fatal-error-call-to-undefined-function-wp_get_current_user-4
 
-            //@TODO: check condition for deactivation
 //            if (!current_user_can('activate_plugins')) {
 //
 //                throw new \Exception("User can't deactivate plugins");
 //            }
-//            \Megaforms\Vendor\Init::deactivate();
+            \Megaforms\Vendor\Init::deactivate();
         }catch(Megaforms\Vendor\Exceptions\MegaformsException $error){
-            Megaforms\Vendor\Libs\Helpers\CommonHelpers::handle_exception($error);
+            $error = Megaforms\Vendor\Libs\Helpers\CommonHelpers::handle_exception($error);
+            MegaformsBootstrap::admin_notice($error);
         }
     }
 
     public static function boot()
     {
         spl_autoload_register('MegaformsBootstrap::autoload');
-
         try
         {
             // Error based on capabilities.php

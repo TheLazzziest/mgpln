@@ -2,27 +2,28 @@
 namespace Megaforms\Vendor\Libs\Wpapi;
 
 use Megaforms\Vendor\Libs\Helpers\CommonHelpers;
-use Megaforms\Vendor\Exceptions\LibsException;
-use Megaforms\Vendor\Plugin;
+use Megaforms\Vendor\Libs\Helpers\PluginDataSet;
+use Megaforms\Vendor\Libs\Traits\Registry;
 
 defined("MEGAFORMS_BOOTSTRAPPED") or die("I'm only the wp plugin");
 
-class Settings
+final class Settings
 {
+    /** @return Settings */
+    use Registry;
     // https://codex.wordpress.org/Function_Reference/add_menu_page
     // the position of the menu page in admin menu structure
     private $_position = 26;
 
-    // the collection of settings pages hooks for the plugin
+    // the collection of current settings pages of the Plugin
+    // which is ready to be hooked
     private $_settings = [];
 
+    // fired list of settings page of the Plugin
+    private $_used_settings = [];
     /**
      *
      */
-    public function __construct()
-    {
-
-    }
 
     /**
      * @param $page_title
@@ -32,7 +33,7 @@ class Settings
      * @param string $function
      * @param string $icon_url
      * @param int $position
-     * @return bool
+     * @return bool | object
      */
     public function add_admin_settings_page($page_title,$menu_title,
                                            $capabilities,$menu_slug,
@@ -49,6 +50,7 @@ class Settings
         $this->_settings[$menu_slug]['function'] = $function;
         $this->_settings[$menu_slug]['icon_url'] = $icon_url;
         $this->_settings[$menu_slug]['position'] = $position > $this->_position ? $position : $this->_position;
+        return $this;
     }
 
     /**
@@ -58,7 +60,7 @@ class Settings
      * @param $capabilities
      * @param $menu_slug
      * @param string $function
-     * @return bool
+     * @return bool | object
      */
     public function add_admin_settings_subpage($parent_slug, $page_title,
                                               $menu_title, $capabilities,
@@ -74,6 +76,8 @@ class Settings
         $this->_settings[$parent_slug]['capabilities'] = $capabilities;
         $this->_settings[$parent_slug]['menu_slug'] = $menu_slug;
         $this->_settings[$parent_slug]['function'] = $function;
+
+        return $this;
     }
 
     /**
@@ -146,23 +150,27 @@ class Settings
         foreach($this->_settings as $menu_slug => $pageParams) {
 
             if(!strcmp($menu_slug,$pageParams['menu_slug'])){
-                \add_menu_page(
-                    __($pageParams['page_title'],Plugin::$plugin_name),
-                    __($pageParams['menu_title'],Plugin::$plugin_name),
+                add_menu_page(
+                    __($pageParams['page_title'],PluginDataSet::load()->plugin_name),
+                    __($pageParams['menu_title'],PluginDataSet::load()->plugin_name),
                     $pageParams['capabilities'], $pageParams['menu_slug'],
                     $pageParams['function'],$pageParams['icon_url'],
                     $pageParams['position']
                 );
+                $this->_used_settings[$menu_slug] = $pageParams;
             }else{
-                \add_submenu_page(
+                add_submenu_page(
                     $pageParams['parent_slug'],
-                    __($pageParams['page_title'],Plugin::$plugin_name),
-                    __($pageParams['sub_menu_title'],Plugin::$plugin_name),
+                    __($pageParams['page_title'],PluginDataSet::load()->plugin_name),
+                    __($pageParams['sub_menu_title'],PluginDataSet::load()->plugin_name),
                     $pageParams['capabilities'],$pageParams['menu_slug'],
                     $pageParams['function']
                 );
+                $this->_used_settings[$menu_slug]['subpages'] = $pageParams;
             }
         }
+
+        $this->_settings = [];
 
     }
 

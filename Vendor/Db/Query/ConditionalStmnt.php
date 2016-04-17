@@ -9,6 +9,10 @@
 namespace Megaforms\Vendor\Db\Query;
 
 
+/**
+ * Class ConditionalStmnt
+ * @package Megaforms\Vendor\Db\Query
+ */
 trait ConditionalStmnt
 {
     protected function distinct(){
@@ -16,6 +20,10 @@ trait ConditionalStmnt
     }
 
     protected function where($args){
+
+    }
+
+    protected function andWhere($args){
 
     }
 

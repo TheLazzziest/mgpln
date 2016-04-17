@@ -1,51 +1,63 @@
 <?php
 namespace Megaforms\Vendor;
 
-use Megaforms\Vendor\Exceptions\MigrationException;
+use Megaforms\Vendor\Exceptions\LibsException;
 use Megaforms\Vendor\Libs\Helpers\CommonHelpers;
-use Megaforms\Vendor\Db\PluginMigration;
+use Megaforms\Vendor\Core\PluginMigration;
+use Megaforms\Vendor\Libs\Traits\Registry;
 
 defined("ABSPATH") or die("I'm only the wp plugin");
 
+/**
+ * Activating/Deactivating plugin
+ * Class Init
+ * @package Megaforms\Vendor
+ */
 class Init{
 
-    private static $plugin_name; // plugin name or directory path to a plugin
+    /**
+     * Plugin name or directory path to a parent plugin
+     * @property string $parent_plugin
+     */
+    private $parent_plugin;
 
     /**
+     * Method start plugin installation
      * @param string $plugin_parent
      * @throws \Exception
      */
+    private function __construct($parent_plugin = ''){
+        @$this->$parent_plugin = $parent_plugin;
+    }
     public static function activate($plugin_parent = "")
     {
-        self::$plugin_name = CommonHelpers::strim($plugin_parent);
+        $init = new self(CommonHelpers::strim($plugin_parent));
 
-        if(!empty(self::$plugin_name)){
-            self::checkPlugin();
+        if(!empty($init->parent_plugin)){
+            $init->checkPlugin();
         }
 
-        $migrator = new PluginMigration();
-        $migrator->up();
+        PluginMigration::load()->up();
     }
 
     /**
-     *
+     *  Method starts plugin disabling, NOT REMOVING !!!!
      */
     public static function deactivate()
     {
-//        $migrator = new PluginMigration();
-//
-//        $migrator->down();
+        PluginMigration::load()->down();
     }
 
     /**
      * @throws \Exception
      */
-    private static function checkPlugin()
+    public function checkPlugin()
     {
-        $checker = new Libs\PluginChecker(self::$plugin_name);
+        $checker = new Libs\Wpapi\PluginChecker($this->parent_plugin);
         if($checker->is_installed()) {
-            throw new MigrationException(
-                __('I can\'t find' . self::$plugin_name . ' plugin in your wp', 'megaforms' )
+            throw new LibsException(
+                LibsException::MISSING_PARENT_PLUGIN,
+                [$this->parent_plugin]
             );
         }
     }

@@ -1,27 +1,42 @@
 <?php
 
-namespace Megaforms\Vendor\Core;
+namespace Megaforms\Vendor\Libs\Wpapi;
+
+
+use Megaforms\Vendor\Libs\Traits\Registry;
 
 defined("MEGAFORMS_BOOTSTRAPPED") or die("I'm only the wp plugin");
+
+/**
+ * Class Loader
+ * @package Megaforms\Vendor\Libs\Wpapi
+ */
 final class Loader
 {
-
+    use Registry;
     /*
     * @access protected
-    * @var array $action The actions registered with WP
+    * @var array $actions The actions registered within WP Plugin
     */
     private $actions = [];
 
     /*
     * @access protected
-    * @var array $filters The filters registered with WP
+    * @var array $fired_actions The fired actions registered within WP Plugin
+    */
+    private $fired_actions = [];
+
+    /*
+    * @access protected
+    * @var array $filters The filters registered within WP
     */
     private $filters = [];
 
     /*
-    *
+    * @access protected
+    * @var array $fired_filters The fired filters registered within WP
     */
-    public function __construct(){}
+    private $fired_filters = [];
     /**
      * A utility function that is used to register the actions and hooks into a single
      * collection.
@@ -57,6 +72,7 @@ final class Loader
      */
     public function add_action($hook, $component, $callback, $priority = 10,$accepted_args = 1){
         $this->actions = $this->add($this->actions, $hook, $component, $callback, $priority,$accepted_args);
+        return $this;
     }
 
     /**
@@ -70,6 +86,7 @@ final class Loader
      */
     public function add_filter( $hook, $component, $callback, $priority = 10, $accepted_args = 1 ) {
         $this->filters = $this->add( $this->filters, $hook, $component, $callback, $priority, $accepted_args );
+        return $this;
     }
 
 
@@ -88,10 +105,12 @@ final class Loader
 //                $filter['priority'],
 //                $filter['accepted_args']
             );
+            $this->fired_filters[] = $filter;
         }
+        $this->filters = [];
     }
     /**
-     * A utility function that is used to register the plugin actions within Wordpress.
+     * A utility function that is used to register the plugin actions hooks.
      */
     public function run_actions(){
         foreach($this->actions as $action){
@@ -104,7 +123,9 @@ final class Loader
 //                $action['priority'],
 //                $action['accepted_args']
             );
+            $this->fired_actions[] = $action;
         }
+        $this->actions = [];
     }
 
     public function run(){
